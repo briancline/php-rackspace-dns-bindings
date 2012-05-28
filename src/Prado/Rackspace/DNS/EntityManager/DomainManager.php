@@ -74,6 +74,24 @@ class DomainManager implements EntityManager
     
     public function update(Entity $entity)
     {
+        if (!$entity->getId()) {
+            throw new \InvalidArgumentException('Must set the ID of the domain you want to remove.');
+        }
+        
+        $object = array();
+        foreach (array('ttl', 'emailAddress', 'comment') as $field) {
+            $get = sprintf('get%s', ucfirst($field));
+            if ($entity->$get()) {
+                $object[$field] = $entity->$get();
+            }
+        }
+        
+        $data = $this->api->put(sprintf('/domains/%s', $entity->getId()), $object);
+        
+        $asynchResponse = new AsynchResponse;
+        $this->hydrator->hydrateEntity($asynchResponse, $data);
+        
+        return $asynchResponse;
     }
     
     public function refresh(Entity $entity)
